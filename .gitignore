@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.angular/
+.vite/
+*.local
+.env
+.DS_Store
+coverage/
+tmp/

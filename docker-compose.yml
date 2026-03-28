@@ -1,0 +1,32 @@
+services:
+  host:
+    build:
+      context: .
+      dockerfile: packages/host/Dockerfile
+    ports:
+      - "4200:80"
+    depends_on:
+      - remote-angular
+      - remote-react
+      - remote-vue
+
+  remote-angular:
+    build:
+      context: .
+      dockerfile: packages/remote-angular/Dockerfile
+    ports:
+      - "4201:80"
+
+  remote-react:
+    build:
+      context: .
+      dockerfile: packages/remote-react/Dockerfile
+    ports:
+      - "4202:80"
+
+  remote-vue:
+    build:
+      context: .
+      dockerfile: packages/remote-vue/Dockerfile
+    ports:
+      - "4203:80"
