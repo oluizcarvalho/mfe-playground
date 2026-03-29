@@ -1,5 +1,3 @@
 {
-  "remote-angular": "https://oluizcarvalho.github.io/mfe-playground/remote-angular/remoteEntry.json",
-  "remote-react": "https://oluizcarvalho.github.io/mfe-playground/remote-react/remoteEntry.js",
-  "remote-vue": "https://oluizcarvalho.github.io/mfe-playground/remote-vue/remoteEntry.js"
+  "remote-angular": "https://oluizcarvalho.github.io/mfe-playground/remote-angular/remoteEntry.json"
 }
