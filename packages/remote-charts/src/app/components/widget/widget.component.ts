@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 
 const MFE_METRIC_EVENT = 'mfe:metric';
 const SHARED_STATE_KEY = '__mfeSharedState';
+const METRICS_STORE_KEY = '__mfeMetricsStore';
 
 interface MetricEntry {
   source: string;
@@ -12,13 +13,38 @@ interface MetricEntry {
 }
 
 function recordMetric(source: string, name: string, value: number): void {
-  window.dispatchEvent(new CustomEvent(MFE_METRIC_EVENT, {
-    detail: { source, name, value, timestamp: Date.now() },
-  }));
+  const metric = { source, name, value, timestamp: Date.now() };
+  const store = (globalThis as any)[METRICS_STORE_KEY];
+  if (store) { store.push(metric); }
+  window.dispatchEvent(new CustomEvent(MFE_METRIC_EVENT, { detail: metric }));
 }
 
 function getSharedState(): any {
-  return (globalThis as any)[SHARED_STATE_KEY];
+  let state = (globalThis as any)[SHARED_STATE_KEY];
+  if (!state) {
+    const store = new Map<string, unknown>();
+    const listeners = new Map<string, Set<Function>>();
+    const channel = new BroadcastChannel('mfe-playground-state');
+    function notify(key: string, value: unknown): void {
+      listeners.get(key)?.forEach((cb: any) => cb(value, key));
+    }
+    channel.onmessage = (event: MessageEvent) => {
+      const { key, value } = event.data;
+      store.set(key, value);
+      notify(key, value);
+    };
+    state = {
+      get: (key: string) => store.get(key),
+      set: (key: string, value: unknown) => { store.set(key, value); channel.postMessage({ key, value }); notify(key, value); },
+      subscribe: (key: string, cb: Function) => {
+        if (!listeners.has(key)) listeners.set(key, new Set());
+        listeners.get(key)!.add(cb);
+        return () => listeners.get(key)!.delete(cb);
+      },
+    };
+    (globalThis as any)[SHARED_STATE_KEY] = state;
+  }
+  return state;
 }
 
 @Component({
@@ -75,6 +101,15 @@ function getSharedState(): any {
           </div>
           <div class="chart-sub">metrics collected</div>
         </div>
+
+        <div class="chart-card">
+          <div class="chart-title">Angular Counter</div>
+          <div class="chart-value red">{{ counterValue }}</div>
+          <div class="chart-bar-track">
+            <div class="chart-bar red-bg" [style.width.%]="clamp(counterValue, 100)"></div>
+          </div>
+          <div class="chart-sub">shared from remote-angular</div>
+        </div>
       </div>
 
       <div class="source-breakdown">
@@ -124,6 +159,7 @@ function getSharedState(): any {
     .green { color: #22c55e; } .green-bg { background: #22c55e; }
     .purple { color: #a855f7; } .purple-bg { background: #a855f7; }
     .orange { color: #f97316; } .orange-bg { background: #f97316; }
+    .red { color: #dd0031; } .red-bg { background: #dd0031; }
     .source-breakdown { background: rgba(0,0,0,0.25); border-radius: 10px; padding: 16px; margin-bottom: 24px; }
     .breakdown-title { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
     .source-row { display: grid; grid-template-columns: 12px 1fr 40px 80px; gap: 10px; align-items: center; padding: 6px 0; font-size: 13px; }
@@ -148,6 +184,7 @@ function getSharedState(): any {
 })
 export class WidgetComponent implements OnInit, OnDestroy {
   userName = '';
+  counterValue = 0;
   loadTime = 0;
   avgLoadTime = 0;
   avgRenderTime = 0;
@@ -187,12 +224,23 @@ export class WidgetComponent implements OnInit, OnDestroy {
     };
     window.addEventListener(MFE_METRIC_EVENT, this.metricHandler);
 
+    // Load historical metrics from global store
+    const metricsStore = (globalThis as any)[METRICS_STORE_KEY] as MetricEntry[] | undefined;
+    if (metricsStore) {
+      this.allMetrics = [...metricsStore];
+      this.recalculate();
+    }
+
     const state = getSharedState();
     if (state) {
       this.userName = state.get('user:name') ?? '';
+      this.counterValue = (state.get('counter:value') as number) ?? 0;
       this.unsubs.push(
         state.subscribe('user:name', (v: string) => {
           this.ngZone.run(() => { this.userName = v; });
+        }),
+        state.subscribe('counter:value', (v: number) => {
+          this.ngZone.run(() => { this.counterValue = v; });
         }),
       );
     }
@@ -221,9 +269,7 @@ export class WidgetComponent implements OnInit, OnDestroy {
       : 0;
 
     const interactions = this.allMetrics.filter((m) => m.name === 'interaction');
-    this.totalInteractions = interactions.length
-      ? Math.max(...interactions.map((m) => m.value))
-      : 0;
+    this.totalInteractions = interactions.length;
 
     const bySource = new Map<string, number>();
     for (const m of this.allMetrics) {
