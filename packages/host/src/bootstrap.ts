@@ -21,6 +21,20 @@ const routes: Routes = [
         (m) => m.WidgetComponent
       ),
   },
+  {
+    path: 'remote-forms',
+    loadComponent: () =>
+      loadRemoteModule('remote-forms', './Component').then(
+        (m) => m.WidgetComponent
+      ),
+  },
+  {
+    path: 'remote-charts',
+    loadComponent: () =>
+      loadRemoteModule('remote-charts', './Component').then(
+        (m) => m.WidgetComponent
+      ),
+  },
 ];
 
 bootstrapApplication(AppComponent, {
