@@ -50,7 +50,7 @@ jobs:
       - name: Build shared
         run: npm run build -w packages/shared
 
-      - name: Set production federation manifest (only NF-compatible remotes)
+      - name: Set production federation manifest
         run: |
           cat > packages/host/src/federation.manifest.json << 'MANIFEST'
           {
@@ -61,12 +61,6 @@ jobs:
       - name: Build remote-angular
         run: npm run build -w packages/remote-angular
 
-      - name: Build remote-react
-        run: npm run build -w packages/remote-react
-
-      - name: Build remote-vue
-        run: npm run build -w packages/remote-vue
-
       - name: Build host
         run: npm run build -w packages/host
 
@@ -76,10 +70,6 @@ jobs:
           cp -r packages/host/dist/host/browser/. deploy/
           mkdir -p deploy/remote-angular
           cp -r packages/remote-angular/dist/remote-angular/browser/. deploy/remote-angular/
-          mkdir -p deploy/remote-react
-          cp -r packages/remote-react/dist/. deploy/remote-react/
-          mkdir -p deploy/remote-vue
-          cp -r packages/remote-vue/dist/. deploy/remote-vue/
           touch deploy/.nojekyll
 
       - name: Deploy to GitHub Pages

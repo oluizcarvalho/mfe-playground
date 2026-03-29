@@ -21,22 +21,6 @@ const routes: Routes = [
         (m) => m.WidgetComponent
       ),
   },
-  {
-    path: 'remote-react',
-    loadComponent: () =>
-      import('./app/components/remote-wrapper/remote-wrapper.component').then(
-        (m) => m.RemoteWrapperComponent
-      ),
-    data: { remoteName: 'remote-react', exposedModule: './App', loadMode: 'iframe' },
-  },
-  {
-    path: 'remote-vue',
-    loadComponent: () =>
-      import('./app/components/remote-wrapper/remote-wrapper.component').then(
-        (m) => m.RemoteWrapperComponent
-      ),
-    data: { remoteName: 'remote-vue', exposedModule: './App', loadMode: 'iframe' },
-  },
 ];
 
 bootstrapApplication(AppComponent, {
