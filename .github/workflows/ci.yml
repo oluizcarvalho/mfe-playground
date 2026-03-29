@@ -37,13 +37,64 @@ jobs:
       - name: Build all packages
         run: npm run build
 
-  docker:
+  deploy-gh-pages:
     runs-on: ubuntu-latest
     needs: build-and-test
     if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build Docker images
-        run: docker compose build
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared
+        run: npm run build -w packages/shared
+
+      - name: Set production federation manifest
+        run: |
+          cat > packages/host/src/federation.manifest.json << 'EOF'
+          {
+            "remote-angular": "https://oluizcarvalho.github.io/mfe-playground/remote-angular/remoteEntry.json",
+            "remote-react": "https://oluizcarvalho.github.io/mfe-playground/remote-react/remoteEntry.js",
+            "remote-vue": "https://oluizcarvalho.github.io/mfe-playground/remote-vue/remoteEntry.js"
+          }
+          EOF
+
+      - name: Build remote-angular
+        run: npm run build -w packages/remote-angular
+
+      - name: Build remote-react
+        run: npm run build -w packages/remote-react
+
+      - name: Build remote-vue
+        run: npm run build -w packages/remote-vue
+
+      - name: Build host
+        run: npm run build -w packages/host
+
+      - name: Assemble deploy directory
+        run: |
+          mkdir -p deploy
+          cp -r packages/host/dist/host/browser/. deploy/
+          mkdir -p deploy/remote-angular
+          cp -r packages/remote-angular/dist/remote-angular/browser/. deploy/remote-angular/
+          mkdir -p deploy/remote-react
+          cp -r packages/remote-react/dist/. deploy/remote-react/
+          mkdir -p deploy/remote-vue
+          cp -r packages/remote-vue/dist/. deploy/remote-vue/
+          touch deploy/.nojekyll
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./deploy
+          cname: ''
