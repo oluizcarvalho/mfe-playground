@@ -27,7 +27,7 @@ const routes: Routes = [
       import('./app/components/remote-wrapper/remote-wrapper.component').then(
         (m) => m.RemoteWrapperComponent
       ),
-    data: { remoteName: 'remote-react', exposedModule: './App' },
+    data: { remoteName: 'remote-react', exposedModule: './App', loadMode: 'iframe' },
   },
   {
     path: 'remote-vue',
@@ -35,7 +35,7 @@ const routes: Routes = [
       import('./app/components/remote-wrapper/remote-wrapper.component').then(
         (m) => m.RemoteWrapperComponent
       ),
-    data: { remoteName: 'remote-vue', exposedModule: './App' },
+    data: { remoteName: 'remote-vue', exposedModule: './App', loadMode: 'iframe' },
   },
 ];
 
