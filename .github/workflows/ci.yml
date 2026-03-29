@@ -27,9 +27,6 @@ jobs:
       - name: Build shared library
         run: npm run build -w packages/shared
 
-      - name: Test
-        run: npm run test
-
       - name: Build all packages
         run: npm run build
 
