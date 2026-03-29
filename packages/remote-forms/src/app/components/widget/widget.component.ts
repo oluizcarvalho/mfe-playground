@@ -4,15 +4,41 @@ import { FormsModule } from '@angular/forms';
 
 const MFE_METRIC_EVENT = 'mfe:metric';
 const SHARED_STATE_KEY = '__mfeSharedState';
+const METRICS_STORE_KEY = '__mfeMetricsStore';
 
 function recordMetric(source: string, name: string, value: number): void {
-  window.dispatchEvent(new CustomEvent(MFE_METRIC_EVENT, {
-    detail: { source, name, value, timestamp: Date.now() },
-  }));
+  const metric = { source, name, value, timestamp: Date.now() };
+  const store = (globalThis as any)[METRICS_STORE_KEY];
+  if (store) { store.push(metric); }
+  window.dispatchEvent(new CustomEvent(MFE_METRIC_EVENT, { detail: metric }));
 }
 
 function getSharedState(): any {
-  return (globalThis as any)[SHARED_STATE_KEY];
+  let state = (globalThis as any)[SHARED_STATE_KEY];
+  if (!state) {
+    const store = new Map<string, unknown>();
+    const listeners = new Map<string, Set<Function>>();
+    const channel = new BroadcastChannel('mfe-playground-state');
+    function notify(key: string, value: unknown): void {
+      listeners.get(key)?.forEach((cb: any) => cb(value, key));
+    }
+    channel.onmessage = (event: MessageEvent) => {
+      const { key, value } = event.data;
+      store.set(key, value);
+      notify(key, value);
+    };
+    state = {
+      get: (key: string) => store.get(key),
+      set: (key: string, value: unknown) => { store.set(key, value); channel.postMessage({ key, value }); notify(key, value); },
+      subscribe: (key: string, cb: Function) => {
+        if (!listeners.has(key)) listeners.set(key, new Set());
+        listeners.get(key)!.add(cb);
+        return () => listeners.get(key)!.delete(cb);
+      },
+    };
+    (globalThis as any)[SHARED_STATE_KEY] = state;
+  }
+  return state;
 }
 
 @Component({

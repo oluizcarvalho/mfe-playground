@@ -72,6 +72,12 @@ export class MetricsPanelComponent implements OnInit, OnDestroy {
       });
     };
     window.addEventListener(MFE_METRIC_EVENT, this.handler);
+
+    // Load historical metrics from global store
+    const store = (globalThis as any)['__mfeMetricsStore'] as MetricEntry[] | undefined;
+    if (store) {
+      this.metricEntries = [...store].reverse().slice(0, 50);
+    }
   }
 
   ngOnDestroy(): void {

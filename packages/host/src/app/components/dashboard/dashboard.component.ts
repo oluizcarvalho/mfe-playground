@@ -52,24 +52,26 @@ interface RemoteCard {
         </div>
       </div>
 
-      @if (sharedUserName || sharedTheme) {
-        <h2 class="section-title">Shared Context</h2>
-        <div class="shared-context">
-          @if (sharedUserName) {
-            <div class="context-item">
-              <span class="context-key">user:name</span>
-              <span class="context-value">{{ sharedUserName }}</span>
-            </div>
-          }
-          @if (sharedTheme) {
-            <div class="context-item">
-              <span class="context-key">user:theme</span>
-              <span class="context-badge" [style.borderColor]="themeColor">{{ sharedTheme }}</span>
-            </div>
-          }
-          <div class="context-hint">Set via Settings remote — propagated via BroadcastChannel</div>
+      <h2 class="section-title">Shared Context</h2>
+      <div class="shared-context">
+        <div class="context-item">
+          <span class="context-key">user:name</span>
+          <span class="context-value">{{ sharedUserName || '—' }}</span>
         </div>
-      }
+        <div class="context-item">
+          <span class="context-key">user:theme</span>
+          <span class="context-badge" [style.borderColor]="themeColor">{{ sharedTheme || 'dark' }}</span>
+        </div>
+        <div class="context-item">
+          <span class="context-key">counter:value</span>
+          <span class="context-value">{{ sharedCounter }}</span>
+        </div>
+        <div class="context-item">
+          <span class="context-key">user:notifications</span>
+          <span class="context-badge" [style.borderColor]="sharedNotifications ? '#22c55e' : '#555'">{{ sharedNotifications ? 'ON' : 'OFF' }}</span>
+        </div>
+        <div class="context-hint">Propagated via SharedState (BroadcastChannel) across all remotes</div>
+      </div>
 
       <h2 class="section-title">Remote Modules</h2>
       <div class="remotes-grid">
@@ -150,6 +152,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   sharedUserName = '';
   sharedTheme = '';
   themeColor = '#1a1d29';
+  sharedCounter = 0;
+  sharedNotifications = true;
 
   private startTime = Date.now();
   private intervalId?: ReturnType<typeof setInterval>;
@@ -173,7 +177,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
       else this.uptime = `${Math.floor(s / 3600)}h`;
     }, 1000);
 
-    this.metricHandler = () => { this.metricsCount++; };
+    // Initialize metrics count from global store
+    const metricsStore = (globalThis as any)['__mfeMetricsStore'] as any[] | undefined;
+    this.metricsCount = metricsStore ? metricsStore.length : 0;
+
+    this.metricHandler = () => {
+      const store = (globalThis as any)['__mfeMetricsStore'] as any[] | undefined;
+      this.metricsCount = store ? store.length : 0;
+    };
     window.addEventListener('mfe:metric', this.metricHandler);
 
     const state = (globalThis as any)[SHARED_STATE_KEY];
@@ -181,6 +192,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.sharedUserName = state.get('user:name') ?? '';
       this.sharedTheme = state.get('user:theme') ?? '';
       this.themeColor = this.themeColors[this.sharedTheme] ?? '#1a1d29';
+      this.sharedCounter = (state.get('counter:value') as number) ?? 0;
+      this.sharedNotifications = (state.get('user:notifications') as boolean) ?? true;
 
       this.unsubs.push(
         state.subscribe('user:name', (v: string) => {
@@ -191,6 +204,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
             this.sharedTheme = v;
             this.themeColor = this.themeColors[v] ?? '#1a1d29';
           });
+        }),
+        state.subscribe('counter:value', (v: number) => {
+          this.ngZone.run(() => { this.sharedCounter = v; });
+        }),
+        state.subscribe('user:notifications', (v: boolean) => {
+          this.ngZone.run(() => { this.sharedNotifications = v; });
         }),
       );
     }
