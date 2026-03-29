@@ -12,11 +12,11 @@
         "build": {
           "builder": "@angular-architects/native-federation:build",
           "options": {
-            "target": "host:build:production"
+            "target": "host:build-original:production"
           },
           "configurations": {
-            "production": { "target": "host:build:production" },
-            "development": { "target": "host:build:development" }
+            "production": { "target": "host:build-original:production" },
+            "development": { "target": "host:build-original:development" }
           },
           "defaultConfiguration": "production"
         },

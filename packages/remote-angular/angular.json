@@ -11,10 +11,10 @@
       "architect": {
         "build": {
           "builder": "@angular-architects/native-federation:build",
-          "options": { "target": "remote-angular:build:production" },
+          "options": { "target": "remote-angular:build-original:production" },
           "configurations": {
-            "production": { "target": "remote-angular:build:production" },
-            "development": { "target": "remote-angular:build:development" }
+            "production": { "target": "remote-angular:build-original:production" },
+            "development": { "target": "remote-angular:build-original:development" }
           },
           "defaultConfiguration": "production"
         },
