@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createRoot } from 'react-dom/client';
 
 const s = {
   widget: { background: 'linear-gradient(135deg, #0f1729 0%, #1a2744 100%)', border: '1px solid rgba(97,218,251,0.2)', borderRadius: '12px', padding: '24px', color: '#e4e6f0', fontFamily: "-apple-system, sans-serif" },
@@ -40,7 +41,6 @@ export default function App() {
 }
 
 export function mount(container: HTMLElement): () => void {
-  const { createRoot } = require('react-dom/client');
   const root = createRoot(container);
   root.render(<App />);
   return () => root.unmount();
