@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 interface MetricEntry {
@@ -7,6 +7,8 @@ interface MetricEntry {
   value: number;
   timestamp: number;
 }
+
+const MFE_METRIC_EVENT = 'mfe:metric';
 
 @Component({
   selector: 'app-metrics-panel',
@@ -23,12 +25,12 @@ interface MetricEntry {
           <div class="metric-row">
             <span class="metric-source" [style.color]="getColor(entry.source)">{{ entry.source }}</span>
             <span class="metric-name">{{ entry.name }}</span>
-            <span class="metric-value">{{ entry.value }}ms</span>
+            <span class="metric-value">{{ formatValue(entry) }}</span>
             <span class="metric-time">{{ formatTime(entry.timestamp) }}</span>
           </div>
         }
         @if (metricEntries.length === 0) {
-          <div class="metric-empty">Waiting for metrics from remote modules...</div>
+          <div class="metric-empty">Navigate to a remote module to see real metrics appear here.</div>
         }
       </div>
     </div>
@@ -50,31 +52,32 @@ interface MetricEntry {
 })
 export class MetricsPanelComponent implements OnInit, OnDestroy {
   metricEntries: MetricEntry[] = [];
-  private intervalId?: ReturnType<typeof setInterval>;
-  private readonly sources = ['remote-angular', 'remote-react', 'remote-vue'];
-  private readonly metricNames = ['load-time', 'render-time', 'hydration', 'ttfb', 'fcp'];
+  private handler!: (e: Event) => void;
+
+  constructor(private ngZone: NgZone) {}
 
   ngOnInit(): void {
-    this.intervalId = setInterval(() => {
-      const source = this.sources[Math.floor(Math.random() * this.sources.length)];
-      const name = this.metricNames[Math.floor(Math.random() * this.metricNames.length)];
-      const value = Math.floor(Math.random() * 200) + 10;
-      this.metricEntries.unshift({ source, name, value, timestamp: Date.now() });
-      if (this.metricEntries.length > 50) this.metricEntries.pop();
-    }, 2000);
+    this.handler = (e: Event) => {
+      const metric = (e as CustomEvent<MetricEntry>).detail;
+      this.ngZone.run(() => {
+        this.metricEntries.unshift(metric);
+        if (this.metricEntries.length > 50) this.metricEntries.pop();
+      });
+    };
+    window.addEventListener(MFE_METRIC_EVENT, this.handler);
   }
 
   ngOnDestroy(): void {
-    if (this.intervalId) clearInterval(this.intervalId);
+    window.removeEventListener(MFE_METRIC_EVENT, this.handler);
   }
 
   getColor(source: string): string {
-    const colors: Record<string, string> = {
-      'remote-angular': '#dd0031',
-      'remote-react': '#61dafb',
-      'remote-vue': '#4fc08d',
-    };
+    const colors: Record<string, string> = { 'remote-angular': '#dd0031' };
     return colors[source] ?? '#8b8fa3';
+  }
+
+  formatValue(entry: MetricEntry): string {
+    return entry.name === 'interaction' ? `#${entry.value}` : `${entry.value}ms`;
   }
 
   formatTime(ts: number): string {

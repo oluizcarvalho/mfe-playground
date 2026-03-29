@@ -5,6 +5,8 @@ import { MetricsPanelComponent } from '../metrics-panel/metrics-panel.component'
 
 interface RemoteCard {
   name: string;
+  framework: string;
+  port: number;
   description: string;
   route: string;
   color: string;
@@ -39,12 +41,12 @@ interface RemoteCard {
           <div class="stat-label">Online</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value accent-blue">Angular</div>
-          <div class="stat-label">Stack</div>
+          <div class="stat-value accent-blue">{{ metricsCount }}</div>
+          <div class="stat-label">Metrics</div>
         </div>
         <div class="stat-card">
           <div class="stat-value accent-purple">{{ uptime }}</div>
-          <div class="stat-label">Uptime</div>
+          <div class="stat-label">Session</div>
         </div>
       </div>
 
@@ -82,8 +84,8 @@ interface RemoteCard {
     .accent-blue { color: var(--accent-blue); }
     .accent-purple { color: var(--accent-purple); }
     .section-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
-    .remotes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 40px; }
-    .remote-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 24px; transition: all 0.2s ease; cursor: pointer; text-decoration: none; color: inherit; display: block; }
+    .remotes-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 40px; }
+    .remote-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 20px; transition: all 0.2s ease; cursor: pointer; text-decoration: none; color: inherit; display: block; }
     .remote-card:hover { background: var(--bg-card-hover); border-color: var(--accent-blue); transform: translateY(-2px); text-decoration: none; }
     .remote-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
     .remote-name { font-weight: 700; font-size: 16px; }
@@ -95,19 +97,14 @@ interface RemoteCard {
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   remotes: RemoteCard[] = [
-    {
-      name: 'remote-angular',
-      description: 'Standalone Angular 21 micro frontend exposing a widget component via Native Federation.',
-      route: '/remote-angular',
-      color: '#dd0031',
-      status: 'online',
-      tag: 'Angular 21 · Native Federation · Port 4201',
-    },
+    { name: 'remote-angular', framework: 'Angular 21', port: 4201, description: 'Remote Angular micro frontend module', route: '/remote-angular', color: '#dd0031', status: 'online', tag: 'Angular' },
   ];
 
   uptime = '0s';
+  metricsCount = 0;
   private startTime = Date.now();
   private intervalId?: ReturnType<typeof setInterval>;
+  private metricHandler!: (e: Event) => void;
 
   get onlineCount(): number {
     return this.remotes.filter((r) => r.status === 'online').length;
@@ -120,9 +117,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
       else if (s < 3600) this.uptime = `${Math.floor(s / 60)}m`;
       else this.uptime = `${Math.floor(s / 3600)}h`;
     }, 1000);
+
+    this.metricHandler = () => { this.metricsCount++; };
+    window.addEventListener('mfe:metric', this.metricHandler);
   }
 
   ngOnDestroy(): void {
     if (this.intervalId) clearInterval(this.intervalId);
+    window.removeEventListener('mfe:metric', this.metricHandler);
   }
 }
