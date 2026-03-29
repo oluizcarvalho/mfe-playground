@@ -1,3 +1,5 @@
 {
-  "remote-angular": "https://oluizcarvalho.github.io/mfe-playground/remote-angular/remoteEntry.json"
+  "remote-angular": "https://oluizcarvalho.github.io/mfe-playground/remote-angular/remoteEntry.json",
+  "remote-forms": "https://oluizcarvalho.github.io/mfe-playground/remote-forms/remoteEntry.json",
+  "remote-charts": "https://oluizcarvalho.github.io/mfe-playground/remote-charts/remoteEntry.json"
 }
