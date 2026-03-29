@@ -1,5 +1,5 @@
 {
   "remote-angular": "http://localhost:4201/remoteEntry.json",
-  "remote-react": "http://localhost:4202/remoteEntry.json",
-  "remote-vue": "http://localhost:4203/remoteEntry.json"
+  "remote-forms": "http://localhost:4202/remoteEntry.json",
+  "remote-charts": "http://localhost:4203/remoteEntry.json"
 }

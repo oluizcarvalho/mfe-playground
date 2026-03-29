@@ -1,7 +1,9 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MetricsPanelComponent } from '../metrics-panel/metrics-panel.component';
+
+const SHARED_STATE_KEY = '__mfeSharedState';
 
 interface RemoteCard {
   name: string;
@@ -50,6 +52,25 @@ interface RemoteCard {
         </div>
       </div>
 
+      @if (sharedUserName || sharedTheme) {
+        <h2 class="section-title">Shared Context</h2>
+        <div class="shared-context">
+          @if (sharedUserName) {
+            <div class="context-item">
+              <span class="context-key">user:name</span>
+              <span class="context-value">{{ sharedUserName }}</span>
+            </div>
+          }
+          @if (sharedTheme) {
+            <div class="context-item">
+              <span class="context-key">user:theme</span>
+              <span class="context-badge" [style.borderColor]="themeColor">{{ sharedTheme }}</span>
+            </div>
+          }
+          <div class="context-hint">Set via Settings remote — propagated via BroadcastChannel</div>
+        </div>
+      }
+
       <h2 class="section-title">Remote Modules</h2>
       <div class="remotes-grid">
         @for (remote of remotes; track remote.name) {
@@ -59,7 +80,10 @@ interface RemoteCard {
               <span class="remote-status" [class]="remote.status">{{ remote.status }}</span>
             </div>
             <div class="remote-description">{{ remote.description }}</div>
-            <div class="remote-tag" [style.color]="remote.color">{{ remote.tag }}</div>
+            <div class="remote-meta">
+              <span class="remote-tag" [style.color]="remote.color">{{ remote.tag }}</span>
+              <span class="remote-port">:{{ remote.port }}</span>
+            </div>
           </a>
         }
       </div>
@@ -69,7 +93,7 @@ interface RemoteCard {
     </div>
   `,
   styles: [`
-    .dashboard { max-width: 1200px; }
+    .dashboard { max-width: 1200px; margin: 0 auto; }
     .dashboard-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; }
     h1 { font-size: 32px; font-weight: 800; letter-spacing: -0.03em; }
     .subtitle { color: var(--text-secondary); margin-top: 4px; font-size: 14px; }
@@ -84,7 +108,13 @@ interface RemoteCard {
     .accent-blue { color: var(--accent-blue); }
     .accent-purple { color: var(--accent-purple); }
     .section-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
-    .remotes-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 40px; }
+    .shared-context { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 40px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+    .context-item { display: flex; align-items: center; gap: 8px; }
+    .context-key { font-size: 12px; font-family: 'JetBrains Mono', 'Fira Code', monospace; color: var(--text-secondary); background: var(--bg-secondary); padding: 3px 8px; border-radius: 4px; }
+    .context-value { font-size: 14px; font-weight: 600; color: var(--accent-blue); }
+    .context-badge { font-size: 12px; font-weight: 600; padding: 3px 10px; border: 1px solid; border-radius: 12px; }
+    .context-hint { font-size: 11px; color: var(--text-secondary); margin-left: auto; }
+    .remotes-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 40px; }
     .remote-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 20px; transition: all 0.2s ease; cursor: pointer; text-decoration: none; color: inherit; display: block; }
     .remote-card:hover { background: var(--bg-card-hover); border-color: var(--accent-blue); transform: translateY(-2px); text-decoration: none; }
     .remote-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
@@ -92,19 +122,44 @@ interface RemoteCard {
     .remote-status { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
     .remote-status.online { background: rgba(34,197,94,0.15); color: var(--accent-green); }
     .remote-description { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5; }
+    .remote-meta { display: flex; justify-content: space-between; align-items: center; }
     .remote-tag { font-size: 12px; font-weight: 600; }
+    .remote-port { font-size: 11px; color: var(--text-secondary); font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+    @media (max-width: 768px) {
+      .dashboard-header { flex-direction: column; gap: 12px; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .shared-context { flex-direction: column; align-items: flex-start; }
+      .context-hint { margin-left: 0; }
+    }
+    @media (max-width: 480px) {
+      h1 { font-size: 24px; }
+      .stats-grid { grid-template-columns: 1fr; }
+      .remotes-grid { grid-template-columns: 1fr; }
+    }
   `],
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   remotes: RemoteCard[] = [
-    { name: 'remote-angular', framework: 'Angular 21', port: 4201, description: 'Remote Angular micro frontend module', route: '/remote-angular', color: '#dd0031', status: 'online', tag: 'Angular' },
+    { name: 'remote-angular', framework: 'Angular 21', port: 4201, description: 'Interactive widget with counter and performance tracking', route: '/remote-angular', color: '#dd0031', status: 'online', tag: 'Widget' },
+    { name: 'remote-forms', framework: 'Angular 21', port: 4202, description: 'Settings & shared state management across micro frontends', route: '/remote-forms', color: '#a855f7', status: 'online', tag: 'Forms' },
+    { name: 'remote-charts', framework: 'Angular 21', port: 4203, description: 'Live metrics visualization and performance dashboard', route: '/remote-charts', color: '#3b82f6', status: 'online', tag: 'Charts' },
   ];
 
   uptime = '0s';
   metricsCount = 0;
+  sharedUserName = '';
+  sharedTheme = '';
+  themeColor = '#1a1d29';
+
   private startTime = Date.now();
   private intervalId?: ReturnType<typeof setInterval>;
   private metricHandler!: (e: Event) => void;
+  private unsubs: (() => void)[] = [];
+  private themeColors: Record<string, string> = {
+    dark: '#1a1d29', blue: '#3b82f6', purple: '#a855f7', green: '#22c55e',
+  };
+
+  constructor(private ngZone: NgZone) {}
 
   get onlineCount(): number {
     return this.remotes.filter((r) => r.status === 'online').length;
@@ -120,10 +175,30 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     this.metricHandler = () => { this.metricsCount++; };
     window.addEventListener('mfe:metric', this.metricHandler);
+
+    const state = (globalThis as any)[SHARED_STATE_KEY];
+    if (state) {
+      this.sharedUserName = state.get('user:name') ?? '';
+      this.sharedTheme = state.get('user:theme') ?? '';
+      this.themeColor = this.themeColors[this.sharedTheme] ?? '#1a1d29';
+
+      this.unsubs.push(
+        state.subscribe('user:name', (v: string) => {
+          this.ngZone.run(() => { this.sharedUserName = v; });
+        }),
+        state.subscribe('user:theme', (v: string) => {
+          this.ngZone.run(() => {
+            this.sharedTheme = v;
+            this.themeColor = this.themeColors[v] ?? '#1a1d29';
+          });
+        }),
+      );
+    }
   }
 
   ngOnDestroy(): void {
     if (this.intervalId) clearInterval(this.intervalId);
     window.removeEventListener('mfe:metric', this.metricHandler);
+    this.unsubs.forEach((fn) => fn());
   }
 }

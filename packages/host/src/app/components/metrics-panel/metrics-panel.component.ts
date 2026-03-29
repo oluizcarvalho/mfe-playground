@@ -43,11 +43,18 @@ const MFE_METRIC_EVENT = 'mfe:metric';
     .metrics-body { max-height: 300px; overflow-y: auto; }
     .metric-row { display: grid; grid-template-columns: 140px 1fr 80px 80px; gap: 12px; padding: 10px 20px; font-size: 13px; font-family: 'JetBrains Mono', 'Fira Code', monospace; border-bottom: 1px solid var(--border-color); transition: background 0.1s ease; }
     .metric-row:hover { background: var(--bg-card-hover); }
-    .metric-source { font-weight: 600; }
+    .metric-source { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .metric-name { color: var(--text-secondary); }
     .metric-value { text-align: right; color: var(--accent-green); font-weight: 600; }
     .metric-time { text-align: right; color: var(--text-secondary); font-size: 11px; }
     .metric-empty { padding: 40px 20px; text-align: center; color: var(--text-secondary); font-size: 14px; }
+    @media (max-width: 640px) {
+      .metric-row { grid-template-columns: 1fr 1fr; gap: 4px; padding: 10px 16px; }
+      .metric-time { display: none; }
+      .metric-source { font-size: 11px; }
+      .metric-name { font-size: 11px; }
+      .metrics-header { padding: 12px 16px; }
+    }
   `],
 })
 export class MetricsPanelComponent implements OnInit, OnDestroy {
@@ -72,7 +79,11 @@ export class MetricsPanelComponent implements OnInit, OnDestroy {
   }
 
   getColor(source: string): string {
-    const colors: Record<string, string> = { 'remote-angular': '#dd0031' };
+    const colors: Record<string, string> = {
+      'remote-angular': '#dd0031',
+      'remote-forms': '#a855f7',
+      'remote-charts': '#3b82f6',
+    };
     return colors[source] ?? '#8b8fa3';
   }
 

@@ -1,11 +1,21 @@
 type StateCallback<T = unknown> = (value: T, key: string) => void;
 
+const GLOBAL_KEY = '__mfeSharedState';
+
 class SharedState {
-  private channel = new BroadcastChannel('mfe-playground-state');
+  private channel!: BroadcastChannel;
   private store = new Map<string, unknown>();
   private listeners = new Map<string, Set<StateCallback>>();
 
   constructor() {
+    // Singleton: reuse existing instance across federated bundles sharing the same window
+    const existing = (globalThis as Record<string, unknown>)[GLOBAL_KEY] as SharedState | undefined;
+    if (existing) {
+      return existing;
+    }
+    (globalThis as Record<string, unknown>)[GLOBAL_KEY] = this;
+
+    this.channel = new BroadcastChannel('mfe-playground-state');
     this.channel.onmessage = (event: MessageEvent) => {
       const { key, value } = event.data;
       this.store.set(key, value);
