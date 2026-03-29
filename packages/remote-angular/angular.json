@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "host": {
+    "remote-angular": {
       "projectType": "application",
       "root": "",
       "sourceRoot": "src",
@@ -11,19 +11,17 @@
       "architect": {
         "build": {
           "builder": "@angular-architects/native-federation:build",
-          "options": {
-            "target": "host:build-original:production"
-          },
+          "options": { "target": "remote-angular:build-original:production" },
           "configurations": {
-            "production": { "target": "host:build-original:production" },
-            "development": { "target": "host:build-original:development" }
+            "production": { "target": "remote-angular:build-original:production" },
+            "development": { "target": "remote-angular:build-original:development" }
           },
           "defaultConfiguration": "production"
         },
         "build-original": {
           "builder": "@angular/build:application",
           "options": {
-            "outputPath": "dist/host",
+            "outputPath": "dist/remote-angular",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
@@ -32,35 +30,27 @@
           },
           "configurations": {
             "production": {
-              "baseHref": "/mfe-playground/",
+              "baseHref": "/mfe-playground/remote-angular/",
               "budgets": [
                 { "type": "initial", "maximumWarning": "500kB", "maximumError": "1MB" },
                 { "type": "anyComponentStyle", "maximumWarning": "4kB", "maximumError": "8kB" }
               ],
               "outputHashing": "all"
             },
-            "development": {
-              "optimization": false,
-              "extractLicenses": false,
-              "sourceMap": true
-            }
+            "development": { "optimization": false, "extractLicenses": false, "sourceMap": true }
           },
           "defaultConfiguration": "production"
         },
         "serve": {
           "builder": "@angular-architects/native-federation:build",
-          "options": {
-            "target": "host:serve-original:development",
-            "rebuildDelay": 0,
-            "dev": true,
-            "port": 4200
-          }
+          "options": { "target": "remote-angular:serve-original:development", "rebuildDelay": 0, "dev": true, "port": 4201 }
         },
         "serve-original": {
           "builder": "@angular/build:dev-server",
+          "options": { "port": 4201 },
           "configurations": {
-            "production": { "buildTarget": "host:build-original:production" },
-            "development": { "buildTarget": "host:build-original:development" }
+            "production": { "buildTarget": "remote-angular:build-original:production" },
+            "development": { "buildTarget": "remote-angular:build-original:development" }
           },
           "defaultConfiguration": "development"
         }

@@ -1,9 +1,9 @@
 {
-  "name": "@mfe-playground/host",
+  "name": "@mfe-playground/remote-angular",
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "ng serve",
+    "dev": "ng serve --port 4201",
     "build": "ng build",
     "test": "ng test --watch=false --browsers=ChromeHeadless",
     "lint": "ng lint"
