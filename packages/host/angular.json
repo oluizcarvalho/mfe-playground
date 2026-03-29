@@ -27,6 +27,13 @@
             "index": "src/index.html",
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
+            "assets": [
+              {
+                "glob": "federation.manifest.json",
+                "input": "src/",
+                "output": "/"
+              }
+            ],
             "styles": ["src/styles.css"],
             "scripts": []
           },
