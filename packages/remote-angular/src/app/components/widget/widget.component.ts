@@ -1,6 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
+const MFE_METRIC_EVENT = 'mfe:metric';
+
+function recordMetric(source: string, name: string, value: number): void {
+  window.dispatchEvent(new CustomEvent(MFE_METRIC_EVENT, {
+    detail: { source, name, value, timestamp: Date.now() },
+  }));
+}
+
 @Component({
   selector: 'app-widget',
   standalone: true,
@@ -21,12 +29,12 @@ import { CommonModule } from '@angular/common';
           <span class="stat-label">Counter</span>
         </div>
         <div class="widget-stat">
-          <span class="stat-number angular-version">v21</span>
-          <span class="stat-label">Angular</span>
+          <span class="stat-number">{{ loadTime }}ms</span>
+          <span class="stat-label">Load time</span>
         </div>
         <div class="widget-stat">
-          <span class="stat-number">NF</span>
-          <span class="stat-label">Federation</span>
+          <span class="stat-number angular-version">v21</span>
+          <span class="stat-label">Angular</span>
         </div>
       </div>
       <button class="widget-btn" (click)="increment()">Increment Counter</button>
@@ -49,6 +57,27 @@ import { CommonModule } from '@angular/common';
 })
 export class WidgetComponent implements OnInit {
   counter = 0;
-  ngOnInit(): void { console.log('[remote-angular] WidgetComponent loaded via Native Federation'); }
-  increment(): void { this.counter++; }
+  loadTime = 0;
+  private initTime = performance.now();
+
+  ngOnInit(): void {
+    const loadTime = Math.round(performance.now() - this.initTime);
+    this.loadTime = loadTime;
+    recordMetric('remote-angular', 'load-time', loadTime);
+
+    requestAnimationFrame(() => {
+      const renderTime = Math.round(performance.now() - this.initTime);
+      recordMetric('remote-angular', 'render-time', renderTime);
+    });
+
+    const navEntry = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
+    if (navEntry) {
+      recordMetric('remote-angular', 'ttfb', Math.round(navEntry.responseStart - navEntry.requestStart));
+    }
+  }
+
+  increment(): void {
+    this.counter++;
+    recordMetric('remote-angular', 'interaction', this.counter);
+  }
 }
