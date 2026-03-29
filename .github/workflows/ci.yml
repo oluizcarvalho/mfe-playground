@@ -54,12 +54,20 @@ jobs:
         run: |
           cat > packages/host/src/federation.manifest.json << 'MANIFEST'
           {
-            "remote-angular": "https://oluizcarvalho.github.io/mfe-playground/remote-angular/remoteEntry.json"
+            "remote-angular": "https://oluizcarvalho.github.io/mfe-playground/remote-angular/remoteEntry.json",
+            "remote-forms": "https://oluizcarvalho.github.io/mfe-playground/remote-forms/remoteEntry.json",
+            "remote-charts": "https://oluizcarvalho.github.io/mfe-playground/remote-charts/remoteEntry.json"
           }
           MANIFEST
 
       - name: Build remote-angular
         run: npm run build -w packages/remote-angular
+
+      - name: Build remote-forms
+        run: npm run build -w packages/remote-forms
+
+      - name: Build remote-charts
+        run: npm run build -w packages/remote-charts
 
       - name: Build host
         run: npm run build -w packages/host
@@ -70,6 +78,10 @@ jobs:
           cp -r packages/host/dist/host/browser/. deploy/
           mkdir -p deploy/remote-angular
           cp -r packages/remote-angular/dist/remote-angular/browser/. deploy/remote-angular/
+          mkdir -p deploy/remote-forms
+          cp -r packages/remote-forms/dist/remote-forms/browser/. deploy/remote-forms/
+          mkdir -p deploy/remote-charts
+          cp -r packages/remote-charts/dist/remote-charts/browser/. deploy/remote-charts/
           touch deploy/.nojekyll
 
       - name: Deploy to GitHub Pages
