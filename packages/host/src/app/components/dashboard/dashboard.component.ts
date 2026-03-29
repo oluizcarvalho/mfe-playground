@@ -5,6 +5,8 @@ import { MetricsPanelComponent } from '../metrics-panel/metrics-panel.component'
 
 interface RemoteCard {
   name: string;
+  framework: string;
+  port: number;
   description: string;
   route: string;
   color: string;
@@ -95,7 +97,7 @@ interface RemoteCard {
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   remotes: RemoteCard[] = [
-    { name: 'remote-angular', framework: 'Angular 21', port: 4201, route: '/remote-angular', color: '#dd0031', status: 'online' },
+    { name: 'remote-angular', framework: 'Angular 21', port: 4201, description: 'Remote Angular micro frontend module', route: '/remote-angular', color: '#dd0031', status: 'online', tag: 'Angular' },
   ];
 
   uptime = '0s';
