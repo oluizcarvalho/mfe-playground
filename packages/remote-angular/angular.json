@@ -19,7 +19,7 @@
           "defaultConfiguration": "production"
         },
         "build-original": {
-          "builder": "@angular/build:application",
+          "builder": "@angular-devkit/build-angular:application",
           "options": {
             "outputPath": "dist/remote-angular",
             "index": "src/index.html",
@@ -46,7 +46,7 @@
           "options": { "target": "remote-angular:serve-original:development", "rebuildDelay": 0, "dev": true, "port": 4201 }
         },
         "serve-original": {
-          "builder": "@angular/build:dev-server",
+          "builder": "@angular-devkit/build-angular:dev-server",
           "options": { "port": 4201 },
           "configurations": {
             "production": { "buildTarget": "remote-angular:build-original:production" },

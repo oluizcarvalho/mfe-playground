@@ -21,7 +21,7 @@
           "defaultConfiguration": "production"
         },
         "build-original": {
-          "builder": "@angular/build:application",
+          "builder": "@angular-devkit/build-angular:application",
           "options": {
             "outputPath": "dist/host",
             "index": "src/index.html",
@@ -57,7 +57,7 @@
           }
         },
         "serve-original": {
-          "builder": "@angular/build:dev-server",
+          "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": { "buildTarget": "host:build-original:production" },
             "development": { "buildTarget": "host:build-original:development" }
