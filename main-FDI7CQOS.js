@@ -1,1 +1,0 @@
-import{a as o}from"./chunk-F5QKAXVG.js";import"./chunk-2VMXMS7J.js";o("./federation.manifest.json").catch(e=>{console.warn("[MFE] Federation init failed (remotes may be offline):",e)}).then(()=>import("./chunk-N5IAIXUB.js")).catch(e=>console.error("[MFE] Bootstrap failed:",e));
