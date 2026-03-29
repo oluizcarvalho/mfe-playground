@@ -23,16 +23,6 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
               <span class="nav-icon nav-angular">▲</span> Angular Remote
             </a>
           </li>
-          <li>
-            <a routerLink="/remote-react" routerLinkActive="active">
-              <span class="nav-icon nav-react">⚛</span> React Remote
-            </a>
-          </li>
-          <li>
-            <a routerLink="/remote-vue" routerLinkActive="active">
-              <span class="nav-icon nav-vue">◈</span> Vue Remote
-            </a>
-          </li>
         </ul>
         <div class="sidebar-footer">
           <span class="status-dot"></span>
@@ -56,9 +46,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
     .nav-list li a.active { background: var(--accent-blue); color: white; }
     .nav-icon { font-size: 16px; }
     .nav-angular { color: #dd0031; }
-    .nav-react { color: #61dafb; }
-    .nav-vue { color: #4fc08d; }
-    .active .nav-angular, .active .nav-react, .active .nav-vue { color: white; }
+    .active .nav-angular { color: white; }
     .sidebar-footer { display: flex; align-items: center; gap: 8px; padding: 12px; font-size: 12px; color: var(--text-secondary); border-top: 1px solid var(--border-color); margin-top: 16px; }
     .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); }
     .content { flex: 1; padding: 32px; overflow-y: auto; }

@@ -2,13 +2,13 @@
   "name": "mfe-playground",
   "version": "1.0.0",
   "private": true,
-  "description": "Micro Frontends monorepo with Native Federation",
+  "description": "Micro Frontends monorepo with Native Federation (Angular)",
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently -n host,remote-ng,remote-react,remote-vue -c blue,green,cyan,magenta \"npm run dev -w packages/host\" \"npm run dev -w packages/remote-angular\" \"npm run dev -w packages/remote-react\" \"npm run dev -w packages/remote-vue\"",
-    "build": "npm run build -w packages/shared && concurrently \"npm run build -w packages/remote-angular\" \"npm run build -w packages/remote-react\" \"npm run build -w packages/remote-vue\" && npm run build -w packages/host",
+    "dev": "concurrently -n host,remote-angular -c blue,red \"npm run dev -w packages/host\" \"npm run dev -w packages/remote-angular\"",
+    "build": "npm run build -w packages/shared && npm run build -w packages/remote-angular && npm run build -w packages/host",
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present"
   },
