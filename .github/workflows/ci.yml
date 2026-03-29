@@ -50,15 +50,13 @@ jobs:
       - name: Build shared
         run: npm run build -w packages/shared
 
-      - name: Set production federation manifest
+      - name: Set production federation manifest (only NF-compatible remotes)
         run: |
-          cat > packages/host/src/federation.manifest.json << 'EOF'
+          cat > packages/host/src/federation.manifest.json << 'MANIFEST'
           {
-            "remote-angular": "https://oluizcarvalho.github.io/mfe-playground/remote-angular/remoteEntry.json",
-            "remote-react": "https://oluizcarvalho.github.io/mfe-playground/remote-react/remoteEntry.js",
-            "remote-vue": "https://oluizcarvalho.github.io/mfe-playground/remote-vue/remoteEntry.js"
+            "remote-angular": "https://oluizcarvalho.github.io/mfe-playground/remote-angular/remoteEntry.json"
           }
-          EOF
+          MANIFEST
 
       - name: Build remote-angular
         run: npm run build -w packages/remote-angular
