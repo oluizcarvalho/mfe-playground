@@ -27,6 +27,9 @@ jobs:
       - name: Build shared library
         run: npm run build -w packages/shared
 
+      - name: Build auth library
+        run: npm run build -w packages/auth
+
       - name: Build all packages
         run: npm run build
 
@@ -49,6 +52,9 @@ jobs:
 
       - name: Build shared
         run: npm run build -w packages/shared
+
+      - name: Build auth
+        run: npm run build -w packages/auth
 
       - name: Set production federation manifest
         run: |
