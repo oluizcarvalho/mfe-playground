@@ -1,5 +1,6 @@
-import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { AUTH_SERVICE } from '@mfe-playground/auth';
 
 const MFE_METRIC_EVENT = 'mfe:metric';
 const SHARED_STATE_KEY = '__mfeSharedState';
@@ -49,7 +50,12 @@ function getSharedState(): any {
       <div class="widget-header">
         <span class="widget-icon">▲</span>
         <h3>Angular Remote Widget</h3>
-        @if (userName) {
+        <span class="auth-badge" [class.authenticated]="auth.isAuthenticated()">
+          {{ auth.isAuthenticated() ? '🔓' : '🔒' }}
+        </span>
+        @if (auth.isAuthenticated()) {
+          <span class="user-badge">Hi, {{ auth.userDisplayName() }}</span>
+        } @else if (userName) {
           <span class="user-badge">Hi, {{ userName }}</span>
         }
       </div>
@@ -77,7 +83,9 @@ function getSharedState(): any {
   styles: [`
     .widget { background: linear-gradient(135deg, #1a1122 0%, #2d1b3d 100%); border: 1px solid #dd003133; border-radius: 12px; padding: 24px; color: #e4e6f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
     .widget-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
-    .user-badge { margin-left: auto; font-size: 12px; padding: 4px 12px; background: rgba(221,0,49,0.15); border: 1px solid rgba(221,0,49,0.3); border-radius: 16px; color: #dd0031; font-weight: 600; }
+    .auth-badge { font-size: 14px; margin-left: auto; padding: 4px 8px; border-radius: 8px; background: rgba(255,255,255,0.05); transition: all 0.2s; }
+    .auth-badge.authenticated { background: rgba(34,197,94,0.15); }
+    .user-badge { font-size: 12px; padding: 4px 12px; background: rgba(221,0,49,0.15); border: 1px solid rgba(221,0,49,0.3); border-radius: 16px; color: #dd0031; font-weight: 600; }
     .widget-icon { font-size: 24px; color: #dd0031; }
     h3 { font-size: 20px; font-weight: 700; margin: 0; }
     .widget-description { color: #8b8fa3; font-size: 14px; margin-bottom: 20px; line-height: 1.5; }
@@ -95,6 +103,7 @@ function getSharedState(): any {
   `],
 })
 export class WidgetComponent implements OnInit, OnDestroy {
+  auth = inject(AUTH_SERVICE);
   counter = 0;
   loadTime = 0;
   userName = '';
