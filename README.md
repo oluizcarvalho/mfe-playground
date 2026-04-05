@@ -25,19 +25,21 @@
 │  ┌─────────────┐  ┌────────────────────────────────────────┐    │
 │  │  Dashboard  │  │         Metrics Panel (real-time)       │    │
 │  │  Shared ctx │  │  load-time · render-time · interaction  │    │
+│  │  Auth events│  │  auth events (login/logout/refresh)     │    │
 │  └─────────────┘  └────────────────────────────────────────┘    │
 │                                                                  │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐   │
 │  │remote-angular│  │remote-forms  │  │    remote-charts     │   │
 │  │  Port 4201   │  │  Port 4202   │  │      Port 4203       │   │
 │  │  Counter +   │  │  Settings &  │  │  Metrics dashboard   │   │
-│  │  metrics     │  │  shared state│  │  + real-time charts  │   │
+│  │  auth badge  │  │  account mgmt│  │  + auth events card  │   │
 │  └──────────────┘  └──────────────┘  └──────────────────────┘   │
 │                                                                  │
 │        ┌──────────────────────────────────────────┐             │
 │        │         Global MFE Infrastructure         │             │
 │        │   globalThis.__mfeSharedState             │             │
 │        │   globalThis.__mfeMetricsStore            │             │
+│        │   globalThis.__mfeAuthService             │             │
 │        └──────────────────────────────────────────┘             │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -73,10 +75,11 @@
 
 | Package | Tech | Port | Description |
 |---------|------|------|-------------|
-| `packages/host` | Angular 21, esbuild, Native Federation | 4200 | Shell app with dashboard, real-time metrics panel, and shared context display |
-| `packages/remote-angular` | Angular 21, Native Federation | 4201 | Interactive counter widget — shares counter value via SharedState |
-| `packages/remote-forms` | Angular 21, Native Federation | 4202 | Settings panel — writes `user:name`, `user:theme`, `user:notifications` to SharedState |
-| `packages/remote-charts` | Angular 21, Native Federation | 4203 | Metrics dashboard — aggregates history from all remotes, shows Angular counter |
+| `packages/host` | Angular 21, esbuild, Native Federation | 4200 | Shell app with dashboard, auth UI, real-time metrics panel, and shared context display |
+| `packages/remote-angular` | Angular 21, Native Federation | 4201 | Interactive counter widget — shares counter value via SharedState, shows auth status |
+| `packages/remote-forms` | Angular 21, Native Federation | 4202 | Settings panel — writes `user:name`, `user:theme`, `user:notifications` to SharedState, manages account |
+| `packages/remote-charts` | Angular 21, Native Federation | 4203 | Metrics dashboard — aggregates history from all remotes, tracks auth events |
+| `packages/auth` | TypeScript, Angular Signals, RxJS | — | Shared auth library with signal-based state and Subject event streams |
 | `packages/shared` | TypeScript | — | EventBus, SharedState, and MetricsCollector utilities |
 
 ## Quick Start
@@ -94,6 +97,13 @@ docker compose up
 
 Open **http://localhost:4200**.
 
+### Demo Credentials
+
+| Email | Password | Role |
+|-------|----------|------|
+| `admin@demo.com` | `admin` | Admin + User |
+| `user@demo.com` | `user` | User |
+
 ## Available Commands
 
 ```bash
@@ -106,9 +116,44 @@ make docker-down   # Stop Docker Compose
 
 ## Cross-MFE Communication
 
-Communication between remotes happens through two global singletons initialized by the host before any remote loads.
+The project demonstrates **three complementary patterns** for sharing state across micro-frontends:
 
-### Shared State
+### 1. Angular Signals (via `@mfe-playground/auth`)
+
+The `AuthService` uses Angular's reactive primitives to share authentication state across all federated modules. Because Native Federation uses `shareAll({ singleton: true })`, the service instance is shared — **signals from one MFE are the same signals in another**.
+
+```typescript
+import { AUTH_SERVICE } from '@mfe-playground/auth';
+
+// In any component across any MFE:
+auth = inject(AUTH_SERVICE);
+
+// Read reactive state (updates automatically across all MFEs)
+auth.isAuthenticated()   // Signal<boolean>
+auth.userDisplayName()   // Signal<string>
+auth.isAdmin()           // Signal<boolean> (computed)
+
+// Subscribe to event streams (RxJS Subjects)
+auth.authEvents$.subscribe(event => {
+  console.log(event.type, event.user?.name);
+});
+
+// Trigger actions
+await auth.login({ email: 'admin@demo.com', password: 'admin' });
+auth.logout();
+```
+
+**Why this works:** `shareAll({ singleton: true })` ensures a single `@angular/core` instance across all federated modules. The `AuthService` singleton (via `globalThis`) means all MFEs read and write to the same signals. Changes are propagated instantly through Angular's change detection — no BroadcastChannel, no manual subscriptions.
+
+**Signals vs Subjects — when to use each:**
+
+| Pattern | Use case | Example in this project |
+|---------|----------|------------------------|
+| `signal()` / `computed()` | Synchronous reactive state bound to templates | `isAuthenticated`, `currentUser`, `userDisplayName` |
+| `Subject` | Async event streams for side effects | `authEvents$` — login/logout/refresh events for metrics |
+| `BehaviorSubject` | Current value + observable stream | `authState$` — current user as Observable for RxJS consumers |
+
+### 2. BroadcastChannel (via SharedState)
 
 A `BroadcastChannel`-backed key/value store available on `globalThis.__mfeSharedState`. Any remote can read, write, or subscribe to keys:
 
@@ -135,8 +180,11 @@ const unsub = state.subscribe('user:name', (value) => {
 | `user:theme` | remote-forms | host dashboard |
 | `user:notifications` | remote-forms | host dashboard |
 | `counter:value` | remote-angular | host dashboard, remote-charts |
+| `auth:user` | auth service | host dashboard |
+| `auth:status` | auth service | host dashboard |
+| `auth:roles` | auth service | host dashboard |
 
-### Persistent Metrics Store
+### 3. Persistent Metrics Store
 
 All metrics are stored in `globalThis.__mfeMetricsStore` (a plain array) AND dispatched as `CustomEvent('mfe:metric')` on `window`. Components that mount later can read the full history:
 
@@ -168,6 +216,11 @@ const unsub = eventBus.on('user:login', (data) => console.log(data));
 ## How Remotes Interact
 
 ```
+auth service (login/logout)
+  └─► signal update → all MFEs react instantly via Angular change detection
+  └─► authEvents$.next() → remote-charts records auth metrics
+  └─► bridge → state.set('auth:*') → host dashboard Shared Context
+
 remote-angular (counter++)
   └─► state.set('counter:value', n)
         ├─► host dashboard updates counter display
@@ -196,6 +249,7 @@ mfe-playground/
 │   ├── remote-angular/    # Counter widget, shares state via SharedState
 │   ├── remote-forms/      # Settings panel, source of truth for user preferences
 │   ├── remote-charts/     # Metrics dashboard, aggregates all remote data
+│   ├── auth/              # Shared auth library — Angular Signals + RxJS Subjects
 │   └── shared/            # EventBus, SharedState, MetricsCollector
 ├── docker-compose.yml
 ├── Makefile

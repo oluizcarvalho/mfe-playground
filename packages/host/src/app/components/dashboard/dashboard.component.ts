@@ -1,7 +1,8 @@
-import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MetricsPanelComponent } from '../metrics-panel/metrics-panel.component';
+import { AUTH_SERVICE, type AuthEvent } from '@mfe-playground/auth';
 
 const SHARED_STATE_KEY = '__mfeSharedState';
 
@@ -70,7 +71,30 @@ interface RemoteCard {
           <span class="context-key">user:notifications</span>
           <span class="context-badge" [style.borderColor]="sharedNotifications ? '#22c55e' : '#555'">{{ sharedNotifications ? 'ON' : 'OFF' }}</span>
         </div>
-        <div class="context-hint">Propagated via SharedState (BroadcastChannel) across all remotes</div>
+        <div class="context-item">
+          <span class="context-key">auth:status</span>
+          <span class="context-badge" [style.borderColor]="auth.isAuthenticated() ? '#22c55e' : '#555'">{{ auth.isAuthenticated() ? 'Authenticated' : 'Guest' }}</span>
+        </div>
+        <div class="context-item">
+          <span class="context-key">auth:user</span>
+          <span class="context-value">{{ auth.userDisplayName() }}</span>
+        </div>
+        <div class="context-hint">Propagated via Angular Signals + BroadcastChannel across all remotes</div>
+      </div>
+
+      <h2 class="section-title">Auth Events <span class="events-badge">via Signals & Subjects</span></h2>
+      <div class="auth-events">
+        @if (authEvents.length === 0) {
+          <div class="events-empty">No auth events yet. Sign in from the sidebar to see events flow.</div>
+        } @else {
+          @for (event of authEvents; track event.timestamp) {
+            <div class="event-row">
+              <span class="event-type" [class]="'event-' + event.type">{{ event.type }}</span>
+              <span class="event-user">{{ event.user?.name ?? '—' }}</span>
+              <span class="event-time">{{ formatTime(event.timestamp) }}</span>
+            </div>
+          }
+        }
       </div>
 
       <h2 class="section-title">Remote Modules</h2>
@@ -133,6 +157,19 @@ interface RemoteCard {
       .shared-context { flex-direction: column; align-items: flex-start; }
       .context-hint { margin-left: 0; }
     }
+    .events-badge { font-size: 11px; font-weight: 500; color: var(--accent-purple); background: rgba(168,85,247,0.1); padding: 2px 8px; border-radius: 10px; margin-left: 8px; }
+    .auth-events { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 40px; }
+    .events-empty { font-size: 13px; color: var(--text-secondary); text-align: center; padding: 12px; }
+    .event-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border-color); font-size: 13px; }
+    .event-row:last-child { border-bottom: none; }
+    .event-type { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .event-login { background: rgba(34,197,94,0.15); color: var(--accent-green); }
+    .event-logout { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .event-token-refresh { background: rgba(59,130,246,0.15); color: var(--accent-blue); }
+    .event-error { background: rgba(249,115,22,0.15); color: #f97316; }
+    .event-session-expired { background: rgba(168,85,247,0.15); color: var(--accent-purple); }
+    .event-user { flex: 1; font-weight: 500; }
+    .event-time { color: var(--text-secondary); font-size: 11px; font-family: 'JetBrains Mono', 'Fira Code', monospace; }
     @media (max-width: 480px) {
       h1 { font-size: 24px; }
       .stats-grid { grid-template-columns: 1fr; }
@@ -141,6 +178,9 @@ interface RemoteCard {
   `],
 })
 export class DashboardComponent implements OnInit, OnDestroy {
+  auth = inject(AUTH_SERVICE);
+  authEvents: AuthEvent[] = [];
+
   remotes: RemoteCard[] = [
     { name: 'remote-angular', framework: 'Angular 21', port: 4201, description: 'Interactive widget with counter and performance tracking', route: '/remote-angular', color: '#dd0031', status: 'online', tag: 'Widget' },
     { name: 'remote-forms', framework: 'Angular 21', port: 4202, description: 'Settings & shared state management across micro frontends', route: '/remote-forms', color: '#a855f7', status: 'online', tag: 'Forms' },
@@ -187,6 +227,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
     };
     window.addEventListener('mfe:metric', this.metricHandler);
 
+    // Subscribe to auth events via RxJS Subject
+    const authSub = this.auth.authEvents$.subscribe((event) => {
+      this.ngZone.run(() => {
+        this.authEvents = [event, ...this.authEvents].slice(0, 10);
+      });
+    });
+    this.unsubs.push(() => authSub.unsubscribe());
+
     const state = (globalThis as any)[SHARED_STATE_KEY];
     if (state) {
       this.sharedUserName = state.get('user:name') ?? '';
@@ -213,6 +261,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
         }),
       );
     }
+  }
+
+  formatTime(timestamp: number): string {
+    return new Date(timestamp).toLocaleTimeString();
   }
 
   ngOnDestroy(): void {

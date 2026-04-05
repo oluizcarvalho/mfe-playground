@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "dev": "concurrently -n host,angular,forms,charts -c blue,red,magenta,cyan \"npm run dev -w packages/host\" \"npm run dev -w packages/remote-angular\" \"npm run dev -w packages/remote-forms\" \"npm run dev -w packages/remote-charts\"",
-    "build": "npm run build -w packages/shared && npm run build -w packages/remote-angular && npm run build -w packages/remote-forms && npm run build -w packages/remote-charts && npm run build -w packages/host",
+    "build": "npm run build -w packages/shared && npm run build -w packages/auth && npm run build -w packages/remote-angular && npm run build -w packages/remote-forms && npm run build -w packages/remote-charts && npm run build -w packages/host",
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present"
   },

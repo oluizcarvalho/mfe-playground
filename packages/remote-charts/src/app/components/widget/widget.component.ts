@@ -1,5 +1,6 @@
-import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { AUTH_SERVICE, type AuthEvent } from '@mfe-playground/auth';
 
 const MFE_METRIC_EVENT = 'mfe:metric';
 const SHARED_STATE_KEY = '__mfeSharedState';
@@ -112,6 +113,30 @@ function getSharedState(): any {
         </div>
       </div>
 
+      <div class="auth-events-card">
+        <div class="chart-title">Auth Events <span class="signal-tag">Signals + Subjects</span></div>
+        <div class="auth-stats">
+          <div class="auth-stat">
+            <span class="auth-stat-value green">{{ authLoginCount }}</span>
+            <span class="auth-stat-label">Logins</span>
+          </div>
+          <div class="auth-stat">
+            <span class="auth-stat-value red">{{ authLogoutCount }}</span>
+            <span class="auth-stat-label">Logouts</span>
+          </div>
+          <div class="auth-stat">
+            <span class="auth-stat-value blue">{{ authRefreshCount }}</span>
+            <span class="auth-stat-label">Refreshes</span>
+          </div>
+          <div class="auth-stat">
+            <span class="auth-stat-value" [class]="auth.isAuthenticated() ? 'green' : 'orange'">
+              {{ auth.isAuthenticated() ? 'Active' : 'Guest' }}
+            </span>
+            <span class="auth-stat-label">Session</span>
+          </div>
+        </div>
+      </div>
+
       <div class="source-breakdown">
         <div class="breakdown-title">Events by Source</div>
         @for (src of sources; track src.name) {
@@ -160,6 +185,12 @@ function getSharedState(): any {
     .purple { color: #a855f7; } .purple-bg { background: #a855f7; }
     .orange { color: #f97316; } .orange-bg { background: #f97316; }
     .red { color: #dd0031; } .red-bg { background: #dd0031; }
+    .auth-events-card { background: rgba(0,0,0,0.25); border-radius: 10px; padding: 16px; margin-bottom: 12px; }
+    .signal-tag { font-size: 9px; font-weight: 500; color: #a855f7; background: rgba(168,85,247,0.15); padding: 2px 6px; border-radius: 8px; margin-left: 6px; }
+    .auth-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
+    .auth-stat { text-align: center; }
+    .auth-stat-value { display: block; font-size: 20px; font-weight: 800; }
+    .auth-stat-label { display: block; font-size: 10px; color: #8b8fa3; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
     .source-breakdown { background: rgba(0,0,0,0.25); border-radius: 10px; padding: 16px; margin-bottom: 24px; }
     .breakdown-title { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
     .source-row { display: grid; grid-template-columns: 12px 1fr 40px 80px; gap: 10px; align-items: center; padding: 6px 0; font-size: 13px; }
@@ -183,6 +214,10 @@ function getSharedState(): any {
   `],
 })
 export class WidgetComponent implements OnInit, OnDestroy {
+  auth = inject(AUTH_SERVICE);
+  authLoginCount = 0;
+  authLogoutCount = 0;
+  authRefreshCount = 0;
   userName = '';
   counterValue = 0;
   loadTime = 0;
@@ -201,6 +236,7 @@ export class WidgetComponent implements OnInit, OnDestroy {
     'remote-angular': '#dd0031',
     'remote-forms': '#a855f7',
     'remote-charts': '#3b82f6',
+    'auth': '#22c55e',
   };
 
   constructor(private ngZone: NgZone) {}
@@ -230,6 +266,16 @@ export class WidgetComponent implements OnInit, OnDestroy {
       this.allMetrics = [...metricsStore];
       this.recalculate();
     }
+
+    // Subscribe to auth events via RxJS Subject
+    const authSub = this.auth.authEvents$.subscribe((event: AuthEvent) => {
+      this.ngZone.run(() => {
+        if (event.type === 'login') this.authLoginCount++;
+        else if (event.type === 'logout') this.authLogoutCount++;
+        else if (event.type === 'token-refresh') this.authRefreshCount++;
+      });
+    });
+    this.unsubs.push(() => authSub.unsubscribe());
 
     const state = getSharedState();
     if (state) {

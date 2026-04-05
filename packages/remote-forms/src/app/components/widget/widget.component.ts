@@ -1,6 +1,7 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { AUTH_SERVICE } from '@mfe-playground/auth';
 
 const MFE_METRIC_EVENT = 'mfe:metric';
 const SHARED_STATE_KEY = '__mfeSharedState';
@@ -95,6 +96,30 @@ function getSharedState(): any {
         </div>
       </div>
 
+      <div class="form-group">
+        <label>Account <span class="signal-tag">Signal-based</span></label>
+        @if (auth.isAuthenticated()) {
+          <div class="account-card">
+            <div class="account-header">
+              <span class="account-avatar">{{ auth.currentUser()?.avatar }}</span>
+              <div class="account-info">
+                <span class="account-name">{{ auth.userDisplayName() }}</span>
+                <span class="account-email">{{ auth.currentUser()?.email }}</span>
+              </div>
+            </div>
+            <div class="account-roles">
+              Roles: {{ auth.currentUser()?.roles?.join(', ') }}
+            </div>
+            <button class="logout-btn" (click)="auth.logout()">Sign Out</button>
+          </div>
+        } @else {
+          <div class="account-guest">
+            <span class="guest-icon">🔒</span>
+            <span>Not signed in. Use the sidebar to authenticate.</span>
+          </div>
+        }
+      </div>
+
       <div class="widget-stats">
         <div class="widget-stat">
           <span class="stat-number">{{ changeCount }}</span>
@@ -136,6 +161,18 @@ function getSharedState(): any {
     .widget-stat { background: rgba(0,0,0,0.2); border-radius: 8px; padding: 16px; text-align: center; }
     .stat-number { display: block; font-size: 28px; font-weight: 800; color: #a855f7; }
     .stat-label { display: block; font-size: 11px; color: #8b8fa3; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .signal-tag { font-size: 9px; font-weight: 500; color: #a855f7; background: rgba(168,85,247,0.15); padding: 2px 6px; border-radius: 8px; text-transform: none; letter-spacing: 0; vertical-align: middle; }
+    .account-card { background: rgba(0,0,0,0.3); border-radius: 8px; padding: 14px; }
+    .account-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+    .account-avatar { width: 36px; height: 36px; border-radius: 50%; background: #a855f7; color: white; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; flex-shrink: 0; }
+    .account-info { display: flex; flex-direction: column; }
+    .account-name { font-size: 14px; font-weight: 600; }
+    .account-email { font-size: 12px; color: #8b8fa3; }
+    .account-roles { font-size: 12px; color: #8b8fa3; margin-bottom: 10px; }
+    .logout-btn { width: 100%; padding: 8px; border: none; border-radius: 6px; background: rgba(239,68,68,0.15); color: #ef4444; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    .logout-btn:hover { background: rgba(239,68,68,0.25); }
+    .account-guest { display: flex; align-items: center; gap: 10px; padding: 14px; background: rgba(0,0,0,0.3); border-radius: 8px; font-size: 13px; color: #8b8fa3; }
+    .guest-icon { font-size: 18px; }
     .purple-text { color: #c084fc; }
     @media (max-width: 640px) {
       .widget { padding: 16px; }
@@ -145,6 +182,7 @@ function getSharedState(): any {
   `],
 })
 export class WidgetComponent implements OnInit, OnDestroy {
+  auth = inject(AUTH_SERVICE);
   userName = '';
   theme = 'dark';
   notifications = true;

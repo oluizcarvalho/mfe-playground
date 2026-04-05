@@ -3,6 +3,7 @@ import { provideRouter, Routes } from '@angular/router';
 import { importProvidersFrom, Component } from '@angular/core';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { loadRemoteModule } from '@angular-architects/native-federation';
+import { provideAuth } from '@mfe-playground/auth';
 
 import { AppComponent } from './app/app.component';
 
@@ -91,5 +92,6 @@ bootstrapApplication(AppComponent, {
   providers: [
     provideRouter(routes),
     importProvidersFrom(BrowserAnimationsModule),
+    provideAuth(),
   ],
 }).catch((err) => console.error(err));
